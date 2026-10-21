@@ -1,0 +1,17 @@
+## Interface: 16001
+## Version: @project-version@
+## Title: AKForeverAltMailer
+## Notes: Your alts get what they use: at any mailbox, herbs to your alchemist, cloth to your tailor, BoE gear to your enchanter or to the alt it is an upgrade for, class supplies to that class, tradeable valuables to your banker - previewed, then sent with one button.
+## Author: Purrdee
+## X-License: MIT
+## IconTexture: Interface\AddOns\AKForeverAltMailer\icon
+## SavedVariables: AKForeverAltMailerDB
+
+Core.lua
+Data.lua
+Roster.lua
+Classify.lua
+Plan.lua
+Mailer.lua
+Panel.lua
+Diagnostics.lua
