@@ -4,6 +4,8 @@
 ## Notes: Your alts get what they use: at any mailbox, herbs to your alchemist, cloth to your tailor, BoE gear to your enchanter or to the alt it is an upgrade for, class supplies to that class, tradeable valuables to your banker - previewed, then sent with one button.
 ## Author: Purrdee
 ## X-License: MIT
+## X-Curse-Project-ID: 1757313
+## X-Wago-ID: aND9LY6o
 ## IconTexture: Interface\AddOns\AKForeverAltMailer\icon
 ## SavedVariables: AKForeverAltMailerDB
 
