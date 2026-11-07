@@ -1,11 +1,11 @@
 -- Diagnostics: '/aam diag' writes a report into the saved file - your characters as the addon knows them, what
 -- the client answered for professions and the skill window, every stack in your bags with the class, subclass,
 -- bind type and quality the client gives and the verdict on it (how materials are recognised on this client is
--- read from here), what was learned about sending, the mailbox's answers, every error and blocked action. Each
--- value is checked before it is copied, so that a secret cannot poison the file. The same report is written at
--- logout. Logging out to the character list, the client read the bags as empty (2026-10-20: 0 stacks judged on two
--- characters; a /reload read all 45), so a report that finds them empty takes the last plan that read them, and
--- says when that was.
+-- read from here), the vendors' goods learned (and what a vendor's window kept secret), what was learned about
+-- sending, the mailbox's answers, every error and blocked action. Each value is checked before it is copied, so
+-- that a secret cannot poison the file. The same report is written at logout. Logging out to the character list,
+-- the client read the bags as empty (2026-10-20: 0 stacks judged on two characters; a /reload read all 45), so a
+-- report that finds them empty takes the last plan that read them, and says when that was.
 local _, ns = ...
 
 local Diagnostics = {}
@@ -85,6 +85,7 @@ function Diagnostics:Collect()
         end)(),
         picked = sanitize(ns.db.receivers),
         keep = sanitize(ns.db.keep),
+        vendors = sanitize(ns.Vendors:Describe()),
         plan = { mails = plan.mails, attachments = plan.attachments, postage = plan.postage, judged = plan.judged, kept = sanitize(plan.kept), from = planFrom },
         items = sanitize(items),
         sending = sanitize(ns.Mailer:Describe()),

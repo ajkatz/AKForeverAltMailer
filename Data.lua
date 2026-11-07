@@ -11,6 +11,9 @@
 --   3. a material you mark yourself (later).
 -- Elemental materials and gems are used by many professions and are left where they are.
 --
+-- VENDOR GOODS are trade goods a vendor sells for money in any number - thread, dye, vials, flux, spices: they
+-- stay, every alt buys its own. The old world's are below; Vendors.lua learns the rest at the vendors you visit.
+--
 -- CLASS SUPPLIES are reagents and ammunition a class uses: they go to an alt of that class.
 --
 -- PROFICIENCIES come from each alt's own skill window when it was read (C_SkillInfo: Armor Proficiencies and
@@ -43,6 +46,13 @@ end
 Data.GOODS = {
     Alchemy = "herbs", Tailoring = "cloth", Blacksmithing = "ore, bars and stone", Leatherworking = "leather",
     Enchanting = "enchanting materials", Cooking = "cooking ingredients", Engineering = "engineering parts",
+}
+
+-- item class 9 (recipes), by subclass: the profession that learns them. Subclass 0 is a book (no profession):
+-- it is no recipe of anyone's and goes on to the banker.
+Data.RECIPE_SUBCLASS = {
+    [1] = "Leatherworking", [2] = "Tailoring", [3] = "Engineering", [4] = "Blacksmithing", [5] = "Cooking",
+    [6] = "Alchemy", [7] = "First Aid", [8] = "Enchanting", [9] = "Fishing",
 }
 
 -- item class 7 (trade goods), by subclass: the profession that uses them
@@ -89,6 +99,19 @@ list("Cooking", { -- meat, fish, eggs (the common ones; the item's own cooking s
     6289, 6291, 6303, 6308, 6317, 6361, 6362, 4603, 8365, 13754, 13756, 13758, 13759, 13760, 13888, 13889,
     13893, 21071, 21153,
 }, Data.MATERIALS)
+
+-- the trade vendors' goods (names checked against wowhead's classic item data, 2026-10-21)
+Data.VENDOR_GOODS = {}
+for _, id in ipairs({
+    2320, 2321, 4291, 8343, 14341,                    -- threads: coarse, fine, silken, heavy silken, rune
+    2325, 2604, 2605, 4340, 4341, 4342, 6260, 6261, 10290, -- dyes: black, red, green, gray, yellow, purple, blue, orange, pink
+    2324, 4289, 2880, 3466,                           -- bleach, salt, weak flux, strong flux
+    3371, 3372, 8925, 18256,                          -- vials: empty, leaded, crystal, imbued
+    6217, 4470, 11291, 4399, 4400,                    -- copper rod, simple wood, star wood, wooden stock, heavy stock
+    2678, 2692, 3713, 17194,                          -- spices: mild, hot, soothing, holiday
+}) do
+    Data.VENDOR_GOODS[id] = true
+end
 
 -- the enchanters' oils: made by the enchanter for the alts that put them on a weapon (the user, 2026-10-20: "an
 -- item enchanters should distribute TO alts"). Forever files them as trade goods of the Enchanting kind

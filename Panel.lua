@@ -265,7 +265,7 @@ local function receiverRow(index)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText(self.profession)
         if self.profession == "Banker" then
-            GameTooltip:AddLine("Gets what no other alt takes, when it is tradeable and worth something: green or better, a recipe, or a gold at a vendor.", 1, 1, 1, true)
+            GameTooltip:AddLine("Gets what no other alt takes, when it is tradeable and worth something: green or better, a recipe for a profession nobody has, or a gold at a vendor.", 1, 1, 1, true)
             GameTooltip:AddLine("Click: the next character. Right-click: no banker.", 0.5, 0.5, 0.5, true)
             GameTooltip:Show()
             return

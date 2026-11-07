@@ -12,6 +12,7 @@
 Core.lua
 Data.lua
 Roster.lua
+Vendors.lua
 Classify.lua
 Plan.lua
 Mailer.lua

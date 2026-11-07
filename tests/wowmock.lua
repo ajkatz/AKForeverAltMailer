@@ -357,10 +357,32 @@ function Mock.install(options)
     end
     G.C_Mail = { IsCommandPending = function() return state.mailPending end }
 
+    -- a vendor's window: state.merchant = { {id, price, available (nil = any number), extended, currency, purchasable,
+    -- secret = { [field] = true }} }; the names are secret, as measured on Forever
+    G.GetMerchantNumItems = function() return state.merchant and #state.merchant or 0 end
+    G.GetMerchantItemID = function(index)
+        local line = state.merchant and state.merchant[index]
+        return line and line.id or nil
+    end
+    G.C_MerchantFrame = {
+        GetItemInfo = function(index)
+            local line = state.merchant and state.merchant[index]
+            if not line then return nil end
+            local item = ITEMS[line.id]
+            local info = { name = SECRET, texture = item and item.icon or 0, price = line.price or 100, stackCount = 1,
+                numAvailable = line.available or -1, isPurchasable = line.purchasable ~= false, isUsable = true,
+                hasExtendedCost = line.extended or false, currencyID = line.currency, isQuestStartItem = false }
+            for field in pairs(line.secret or {}) do
+                info[field] = SECRET
+            end
+            return info
+        end,
+    }
+
     G.SlashCmdList = {}
 
     local ns = {}
-    for _, file in ipairs({ "Core.lua", "Data.lua", "Roster.lua", "Classify.lua", "Plan.lua", "Mailer.lua", "Panel.lua", "Diagnostics.lua" }) do
+    for _, file in ipairs({ "Core.lua", "Data.lua", "Roster.lua", "Vendors.lua", "Classify.lua", "Plan.lua", "Mailer.lua", "Panel.lua", "Diagnostics.lua" }) do
         local chunk, err = loadfile(file)
         if not chunk then
             error("cannot load " .. file .. ": " .. tostring(err))
@@ -493,6 +515,12 @@ function Mock.update(seconds, step)
             end
         end
     end
+end
+
+-- a vendor's window opens, its lines as state.merchant takes them
+function Mock.openMerchant(lines)
+    state.merchant = lines
+    Mock.fire("MERCHANT_SHOW")
 end
 
 -- what is in the bags now: [itemID] = total count

@@ -325,7 +325,7 @@ scenario("what always stays: the hearthstone, soulbound things, greys, quest ite
 end)
 
 scenario("the banker, picked by you: gets what no other alt takes when it is tradeable and worth something - green or better, a recipe, a gold at a vendor - and what a rule found nobody for; herbs, gear and supplies still go where they did; on the banker itself it stays; '/aam banker none' stops it", function()
-    Mock.item(80001, { name = "Mock Recipe: Fish Stew", classID = 9, subclassID = 5, quality = 1, sellPrice = 50 })
+    Mock.item(80001, { name = "Mock Schematic: Gizmo", classID = 9, subclassID = 3, quality = 1, sellPrice = 50 }) -- no engineer
     Mock.item(80002, { name = "Mock Moss Agate", classID = 3, subclassID = 0, quality = 2, sellPrice = 2000 })
     Mock.item(80003, { name = "Mock Elemental Fire", classID = 7, subclassID = 10, quality = 1, sellPrice = 400 })
     Mock.item(80004, { name = "Mock Silver Idol", classID = 15, subclassID = 0, quality = 1, sellPrice = 20000 })
@@ -540,6 +540,65 @@ scenario("the enchanters' oils go to the alts that put them on a weapon, never t
     Mock.item(10940, { name = "Strange Dust", classID = 7, subclassID = 12 }) -- as the other scenarios know it
 end)
 
+scenario("trade goods a vendor sells stay - every alt buys its own: thread, dye, vials, flux and spices by heart, never to the tailor nor the banker; whatever else a vendor's window shows sold for money in any number is learned for the account - not what it has in limited supply, sells for tokens or will not sell you, nothing but trade goods, nothing in a fight, no line it keeps secret; '/aam set vendorGoods off' mails them like any material", function()
+    Mock.item(2320, { name = "Coarse Thread", classID = 7, subclassID = 5, sellPrice = 2 })     -- measured: cloth's subtype
+    Mock.item(18256, { name = "Imbued Vial", classID = 7, subclassID = 11, sellPrice = 1500 }) -- twenty sell for 3g
+    Mock.item(80020, { name = "Mock Vendor Cloth", classID = 7, subclassID = 5 })
+    Mock.item(80021, { name = "Mock Limited Ore", classID = 7, subclassID = 7 })
+    Mock.item(80022, { name = "Mock Token Herb", classID = 7, subclassID = 9 })
+    Mock.item(80023, { name = "Mock Revered Leather", classID = 7, subclassID = 6 })
+    Mock.item(80024, { name = "Mock Secret Spice", classID = 7, subclassID = 8 })
+    Mock.item(80025, { name = "Mock Fight Thread", classID = 7, subclassID = 5 })
+    local bags = mainBags()
+    bags[3] = { [1] = { id = 2320, count = 20 }, [2] = { id = 18256, count = 20 }, [3] = { id = 80020, count = 5 }, [4] = { id = 80021, count = 2 },
+        [5] = { id = 80022 }, [6] = { id = 80023 }, [7] = { id = 80024 }, [8] = { id = 80025 } }
+    local ns = account({ bags = bags }, { "bank" })
+    Mock.slash("banker Purr Bank")
+    local thread = keptWith(ns, 2320, "vendor goods: every alt buys its own")
+    equal(thread.category, "materials")
+    keptWith(ns, 18256, "vendor goods")                 -- worth 3g at a vendor, and still no valuable for the banker
+    sentTo(ns, 80020, "Purr Mage")                      -- no vendor seen selling it yet: cloth for the tailor
+    -- a vendor's window
+    Mock.openMerchant({
+        { id = 80020, price = 50 },                      -- any number, for money: learned
+        { id = 80021, price = 400, available = 3 },      -- three in stock
+        { id = 80022, price = 0, extended = true },      -- for tokens
+        { id = 80023, price = 900, purchasable = false }, -- a reputation short
+        { id = 80024, price = 20, secret = { numAvailable = true } },
+        { id = 2512, price = 10 },                       -- arrows: no trade good
+        { id = 2320, price = 10 },                       -- known by heart already
+    })
+    check(ns.db.vendorItems[80020], "learned")
+    for _, id in ipairs({ 80021, 80022, 80023, 80024, 2512, 2320 }) do
+        check(not ns.db.vendorItems[id], "not learned: " .. id)
+    end
+    keptWith(ns, 80020, "vendor goods")
+    sentTo(ns, 80021, "Purr Tank"); sentTo(ns, 80022, "Purr Gola"); sentTo(ns, 80023, "Purr Leather"); sentTo(ns, 80024, "Purr Gola")
+    sentTo(ns, 2512, "Purr Gola")                        -- the hunter's arrows, as before
+    -- in a fight the window is left alone; its next change, out of the fight, is read
+    Mock.fire("PLAYER_REGEN_DISABLED")
+    Mock.openMerchant({ { id = 80025, price = 30 } })
+    check(not ns.db.vendorItems[80025], "not in a fight")
+    Mock.fire("PLAYER_REGEN_ENABLED")
+    Mock.fire("MERCHANT_UPDATE")
+    check(ns.db.vendorItems[80025], "read after the fight")
+    -- the report
+    Mock.slash("diag")
+    local vendors = ns.db.diag.vendors
+    check(vendors.byHeart >= 30, "the list by heart: " .. tostring(vendors.byHeart))
+    equal(#vendors.learned, 2, "learned"); equal(vendors.secretFields.numAvailable, 1, "the secret line, counted")
+    equal(vendors.lastRead.source, "MERCHANT_UPDATE")
+    -- switched off, they go like any material - or to the banker
+    Mock.slash("set vendorGoods off")
+    sentTo(ns, 2320, "Purr Mage"); sentTo(ns, 80020, "Purr Mage")
+    sentTo(ns, 18256, "Purr Bank")
+    Mock.slash("set vendorGoods on")
+    keptWith(ns, 2320, "vendor goods")
+    -- learned for the account: another alt knows them
+    local other = loginAs(ALTS.gola, ns.db)
+    check(other.Vendors:Sells(80020) and other.Vendors:Sells(80025) and other.Vendors:Sells(2320), "for the whole account")
+end)
+
 scenario("the plan: per receiver, mails of twelve; postage thirty copper an item; each subject names the goods; '/aam plan' tells it in the chat, anywhere", function()
     local bags = mainBags()
     for slot = 1, 13 do
@@ -719,6 +778,57 @@ scenario("'/aam diag' writes the report: the characters, what the client answere
     check(#ns.db.diag.items > 0, "the items of the last full plan")
     check(ns.db.diag.plan.from:find("the last time the bags read", 1, true), ns.db.diag.plan.from)
     check(ns.db.diag.plan.judged > 0, "judged")
+end)
+
+scenario("recipes go to the alt that gets their profession's materials: a tailoring pattern to the tailor, an alchemy recipe to the alchemist, a cooking recipe to the cook - your pick wins; a recipe for a profession nobody has, or a book, goes on to the banker; your own profession's recipe stays with you; 'recipes off' leaves them to the banker", function()
+    Mock.item(81001, { name = "Mock Pattern: Linen Shirt", classID = 9, subclassID = 2, quality = 1, sellPrice = 25 })
+    Mock.item(81002, { name = "Mock Recipe: Minor Healing", classID = 9, subclassID = 6, quality = 1, sellPrice = 25 })
+    Mock.item(81003, { name = "Mock Plans: Copper Mace", classID = 9, subclassID = 4, quality = 2, sellPrice = 100 })
+    Mock.item(81004, { name = "Mock Recipe: Boar Ribs", classID = 9, subclassID = 5, quality = 1, sellPrice = 10 })
+    Mock.item(81005, { name = "Mock Formula: Minor Stamina", classID = 9, subclassID = 8, quality = 1, sellPrice = 25 })
+    Mock.item(81006, { name = "Mock Pattern: Leather Boots", classID = 9, subclassID = 1, quality = 1, sellPrice = 25 })
+    Mock.item(81007, { name = "Mock Schematic: Flare", classID = 9, subclassID = 3, quality = 1, sellPrice = 25 })
+    Mock.item(81008, { name = "Mock Book of Lore", classID = 9, subclassID = 0, quality = 1, sellPrice = 25 })
+    Mock.item(81009, { name = "Mock Manual: Heavy Silk Bandage", classID = 9, subclassID = 7, quality = 1, sellPrice = 25 })
+    local bags = mainBags()
+    bags[3] = {}
+    for i, id in ipairs({ 81001, 81002, 81003, 81004, 81005, 81006, 81007, 81008, 81009 }) do
+        bags[3][i] = { id = id }
+    end
+    local ns = account({ bags = bags }, { "bank" })
+    local pattern = sentTo(ns, 81001, "Purr Mage")          -- Tailoring 200
+    check(pattern.reason:find("a Tailoring recipe: the highest Tailoring (200)", 1, true), pattern.reason)
+    equal(pattern.category, "recipes")
+    sentTo(ns, 81002, "Purr Gola")                          -- Alchemy 230
+    sentTo(ns, 81003, "Purr Tank")                          -- Blacksmithing
+    sentTo(ns, 81004, "Purr Gola")                          -- Cooking 100 beats your 60
+    sentTo(ns, 81005, "Purr Die")                           -- Enchanting
+    sentTo(ns, 81006, "Purr Leather")
+    keptWith(ns, 81007, "nobody has Engineering yet")       -- no engineer, no banker: it stays
+    keptWith(ns, 81008)                                     -- a book: nobody's recipe
+    keptWith(ns, 81009, "yours: you are the first aid alt") -- you have the only First Aid
+    -- the recipes travel with the materials, in the same mail
+    local plan = ns.Plan.Build()
+    for _, group in ipairs(plan.receivers) do
+        if group.entry.address == "Purr Mage" then
+            check(group.mails[1].subject:find("cloth, recipes", 1, true), group.mails[1].subject)
+        end
+    end
+    -- your pick of tailor gets the patterns too
+    ns.Roster:CycleReceiver("Tailoring")
+    ns.Roster:CycleReceiver("Tailoring")
+    local picked = sentTo(ns, 81001, "Purr Die")
+    check(picked.reason:find("your pick", 1, true), picked.reason)
+    sentTo(ns, 2589, "Purr Die")                            -- with the cloth
+    -- with a banker: the engineering schematic and the book go to it
+    Mock.slash("banker Purr Bank")
+    sentTo(ns, 81007, "Purr Bank")
+    sentTo(ns, 81008, "Purr Bank")
+    sentTo(ns, 81002, "Purr Gola")                          -- the others still go to their profession
+    Mock.slash("set recipes off")
+    sentTo(ns, 81002, "Purr Bank")                          -- switched off: back to the banker, as before
+    Mock.slash("banker none")
+    keptWith(ns, 81002, "recipes are switched off")
 end)
 
 Mock.realPrint(string.format("%d passed, %d failed", passed, #failures))

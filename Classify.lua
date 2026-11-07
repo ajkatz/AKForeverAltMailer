@@ -4,9 +4,16 @@
 --   * stays: your keep list, soulbound, locked, a quest item or key, grey (for the vendor), the hearthstone;
 --   * CLASS SUPPLIES (Data.SUPPLIES - candles, powders, shards, the enchanters' oils - and arrows and bullets):
 --     they stay with you when you are of their class, else go to the highest-level alt of their classes;
+--   * VENDOR GOODS - trade goods a vendor sells for money in any number (thread, dye, vials, flux, spices by
+--     heart; Vendors.lua learns the rest at the vendors you visit): they stay, every alt buys its own - never to
+--     the profession's alt, never to the banker (the user, 2026-10-21: "stuff that is bought from a trade vendor
+--     doesn't typically need to be mailed like thread");
 --   * PROFESSION MATERIALS (Data.MATERIALS, else the item's trade-goods type): to the alt highest in the
 --     profession that uses them. A trade good that no recipe uses (the client's isCraftingReagent says no) is a
 --     product, not a material - unless the table names it;
+--   * RECIPES - patterns, plans, schematics, formulas, by the recipe's subtype: to that same alt, the one that
+--     gets the profession's materials (the user, 2026-11-06: "the tailoring alt target gets tailoring recipes and
+--     so on for each profession"). A book, or a profession nobody has, goes on to the banker;
 --   * GEAR - unbound armor or weapons that bind when worn, green or better: to the alt who would wear it as the
 --     biggest upgrade (it can use the armor or weapon type, it is near the item's level, the item's stats suit its
 --     class, and the item's level beats what it wears in that slot); failing that to the enchanter. Never kept
@@ -273,6 +280,11 @@ function Classify.Verdict(slotInfo, facts)
         return send(entry, "supplies", "for your " .. string.lower(class))
     end
 
+    -- vendor goods: every alt buys its own, for less than the postage
+    if ns:GetOption("vendorGoods") and ns.Vendors:Sells(itemID) then
+        return keep("vendor goods: every alt buys its own", "materials")
+    end
+
     -- profession materials: the table first, then the trade-goods type - when a recipe uses the item
     local profession = ns.Data.MATERIALS[itemID]
     if not profession and facts.classID == CLASS_TRADEGOODS and facts.isCraftingReagent ~= false then
@@ -290,6 +302,22 @@ function Classify.Verdict(slotInfo, facts)
             return keep("yours: you are the " .. string.lower(profession) .. " alt (" .. why .. ")", "materials")
         end
         return send(entry, "materials", why, profession)
+    end
+
+    -- recipes: to the alt that gets the profession's materials (your pick, else the highest skill)
+    local craft = facts.classID == CLASS_RECIPE and ns.Data.RECIPE_SUBCLASS[facts.subclassID] or nil
+    if craft then
+        if not ns:GetOption("recipes") then
+            return Classify.ForBanker(slotInfo, facts) or keep("recipes are switched off", "recipes")
+        end
+        local entry, why = Roster:ReceiverFor(craft)
+        if not entry then
+            return Classify.ForBanker(slotInfo, facts) or keep(why, "recipes")
+        end
+        if Roster:IsMe(entry.key) then
+            return keep("yours: you are the " .. string.lower(craft) .. " alt (" .. why .. ")", "recipes")
+        end
+        return send(entry, "recipes", "a " .. craft .. " recipe: " .. why, craft)
     end
 
     -- gear

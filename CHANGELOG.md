@@ -1,5 +1,17 @@
 # AKForeverAltMailer
 
+## 0.1.1
+
+- **Recipes go to their profession's alt.** A tailoring pattern goes to your tailor, an alchemy recipe to
+  your alchemist, plans to your blacksmith - the same alt that gets the profession's materials (your pick in the
+  Receivers list wins). A recipe for a profession nobody has, or a book, still goes to the banker.
+  `/aam set recipes off` leaves recipes to the banker as before.
+- **Vendor goods stay.** Thread, dye, vials, flux, spices - the trade goods a vendor sells for money in any
+  number - are no longer mailed to the profession's alt or to the banker: every alt buys its own, for less than
+  the postage. The old world's trade-vendor goods are known by heart; anything else is learned, for the whole
+  account, from the vendors' windows you open (not what a vendor has in limited supply, sells for tokens, or
+  will not sell you). `/aam set vendorGoods off` mails them as before. `/aam diag` lists what was learned.
+
 ## 0.1.0
 
 - **First build.** At any mailbox, a panel beside the mail window shows what in your bags goes to which of your

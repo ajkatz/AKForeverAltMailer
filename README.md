@@ -20,6 +20,8 @@ and again after it levels a profession, and the addon knows your account.
 | Dust, essences and shards | your highest Enchanting |
 | Meat and fish | your highest Cooking |
 | Engineering parts | your highest Engineering |
+| Recipes, patterns, plans, schematics, formulas | the same alt as that profession's materials |
+| Trade goods a vendor sells: thread, dye, vials, flux, spices | nobody - they stay, every alt buys its own |
 | Gear that binds when worn, green or better | the alt it is the biggest upgrade for; else your enchanter, to disenchant |
 | Class supplies: candles, powders, runes, symbols, ankhs, soul shards, the enchanters' wizard and mana oils, arrows and bullets | you, when you are of their class; else your highest alt of those classes |
 | Tradeable valuables no rule above takes | your banker |
@@ -29,6 +31,15 @@ and again after it levels a profession, and the addon knows your account.
 - **A material is known by the addon's own table** of the old world's herbs, cloth, ore, leather, enchanting
   materials and cooking ingredients, else by its trade-goods type - when a recipe uses it. Forever files the
   enchanters' oils as Enchanting trade goods; here they are class supplies, never the enchanter's material.
+- **Vendor goods stay.** A trade good a vendor sells for money, in any number, is not mailed - not to the
+  profession's alt, not to the banker: every alt buys its own, for less than the postage (a Coarse Thread costs
+  10 copper, its mail 30). The old world's trade-vendor goods are known by heart - thread, dye, bleach, salt,
+  flux, vials, rods and wood, gun stocks, spices; anything else is learned, for the whole account, when a
+  vendor's window shows it to you. What a vendor has in limited supply, sells for tokens, or will not sell you
+  is not learned. `/aam set vendorGoods off` mails them like any material.
+- **Recipes go with the materials.** A pattern, recipe, plans, schematic or formula goes to the alt that gets
+  that profession's materials - by the recipe's own type, so your pick in the Receivers list counts too. A book,
+  or a recipe for a profession nobody has, goes on to the banker. `/aam set recipes off` leaves them to it.
 - **Gear goes to a wearer** among your other characters that can use the armor or weapon type (its own skill
   window, else its class), is at most three levels under the item's required level, suits the item's stats
   (intellect and spirit are not for a warrior, strength and agility not for a mage), and wears less in that
@@ -36,7 +47,7 @@ and again after it levels a profession, and the addon knows your account.
   the off hand. Nobody: the enchanter, with a note when its skill is short of disenchanting it. The character
   at the mailbox never keeps a piece "for itself": it holds the piece, and puts it on if it wants it.
 - **The banker** is only ever the one you pick: `/aam banker <name>`, or in the Receivers list. It gets what is
-  tradeable and worth something - green or better, a recipe, or a stack that sells for a gold at a vendor -
+  tradeable and worth something - green or better, a recipe nobody else takes, or a stack that sells for a gold at a vendor -
   when no other rule takes it, or a rule found nobody for it (engineering parts with no engineer). What a
   character uses up never goes to the banker: potions, food, scrolls, reagents, arrows and bullets stay.
 - **What always stays:** the hearthstone, soulbound things, anything locked, quest items, keys, greys (for the
@@ -72,8 +83,8 @@ little money for the postage, or items already on the send window, stop it too.
 - `/aam banker <name>` - pick your banker; `/aam banker none` stops it
 - `/aam alts` - your characters as the addon knows them; `/aam forget <name>` drops one
 - `/aam unkeep` - your keep list; `/aam unkeep <item id>`, `/aam unkeep all`
-- `/aam set` - the options: materials, gear and supplies on or off, the least quality of gear mailed, the
-  level slack, the banker's quality and money lines, docking; `/aam set <name> <value>`, `/aam set <name> default`
+- `/aam set` - the options: materials, recipes, gear, supplies and vendor goods on or off, the least quality of gear
+  mailed, the level slack, the banker's quality and money lines, docking; `/aam set <name> <value>`, `/aam set <name> default`
 - `/aam diag` - a report into the saved file
 
 ## Files
@@ -82,6 +93,7 @@ little money for the postage, or items already on the send window, stop it too.
 Core.lua         namespace, events, saved variables (one account table, a profile per character), commands, options
 Data.lua         professions and their goods, the materials and class supplies tables, armor and weapon skills
 Roster.lua       each character as it logs in; the receivers per profession; the banker
+Vendors.lua      the vendors' goods: known by heart, and learned at the vendors you visit
 Classify.lua     where one stack goes, and why - or why it stays
 Plan.lua         the bags judged, gathered per receiver, cut into mails of twelve
 Mailer.lua       the sending, one mail at a time, and the measuring of one click or one per mail
@@ -97,7 +109,9 @@ mailbox took the Forever names ("Purr Gola") as addresses. Logging out to the ch
 the bags as empty (a /reload reads them), so a report that finds them empty keeps the last plan that read them.
 Still to measure, reported in `/aam diag`: which signal of the mailbox closing this client sends (MAIL_CLOSED,
 the interaction manager's, or only the mail window hiding); whether the client's isCraftingReagent holds for
-the old world's materials; the client's answer to CanDualWield.
+the old world's materials; the client's answer to CanDualWield; which of a vendor's answers the client keeps
+secret (an item's name, measured; its stock and cost are read only when they are not), and so whether the
+vendors' goods are learned in game.
 
 Taking mail from your alts when you open a mailbox on the receiving alt is planned for a later version.
 

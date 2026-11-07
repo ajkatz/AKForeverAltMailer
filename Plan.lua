@@ -45,6 +45,8 @@ local function subjectFor(mail)
             word = ns.Data.GOODS[stack.verdict.detail] or "materials"
         elseif stack.verdict.category == "gear" then
             word = stack.verdict.detail == "wear" and "gear for you" or "gear to disenchant"
+        elseif stack.verdict.category == "recipes" then
+            word = "recipes"
         elseif stack.verdict.category == "valuables" then
             word = "valuables"
         else

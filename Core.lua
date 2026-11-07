@@ -8,9 +8,9 @@
 -- What this addon is for (the user, 2026-10-20): "determine profession/class needs and automatically take an
 -- inventory of stuff and mail it to the right alts. For instance i want to always have a designated enchanter
 -- where all BoE items go, a designated alchemist where all herbs go, a designated tailor where all cloth goes".
--- His four answers: receivers follow each alt's professions (the highest skill), with a panel to override;
--- at the mailbox a preview with one send button; profession materials, BoE gear to the enchanter, gear an alt
--- can wear, and class supplies, all four; and the receiving alt takes the mail of your own alts - "sending
+-- The user's four answers: receivers follow each alt's professions (the highest skill), with a panel to
+-- override; at the mailbox a preview with one send button; profession materials, BoE gear to the enchanter, gear
+-- an alt can wear, and class supplies, all four; and the receiving alt takes the mail of your own alts - "sending
 -- primary goal / receiving secondary goal": this build sends.
 local ADDON_NAME, ns = ...
 
@@ -197,14 +197,16 @@ end
 
 ------------------------------------------------------------------------
 -- Saved variables: one account-wide table - the roster of your characters, the receivers you picked, the keep
--- list, what was learned about sending - and a profile per character, keyed "First Last - Realm" as the
--- client names you since build 70170 (the surname sits in the realm slot of UnitName; the name on the wire is
--- GetUnitName(unit, true)).
+-- list, the vendors' goods learned, what was learned about sending - and a profile per character, keyed
+-- "First Last - Realm" as the client names you since build 70170 (the surname sits in the realm slot of
+-- UnitName; the name on the wire is GetUnitName(unit, true)).
 ------------------------------------------------------------------------
 local OPTION_DEFAULTS = {
     materials = true,  -- profession materials go to the alt highest in that profession
+    recipes = true,    -- recipes, patterns, plans and schematics go to the same alt as their profession's materials
     gear = true,       -- unbound gear: to an alt who would wear it as an upgrade, else to the enchanter
     supplies = true,   -- class supplies (reagents, ammo) go to an alt of that class
+    vendorGoods = true, -- trade goods a vendor sells stay: every alt buys its own (Vendors.lua)
     gearQuality = 2,   -- the least quality of gear that is mailed: 2 = uncommon (green)
     levelSlack = 3,    -- gear for an alt up to this many levels above it: it will wear it soon
     bankerQuality = 2, -- the banker takes tradeable items of this quality or better (2 = uncommon, green) ...
@@ -227,6 +229,7 @@ local function initDB()
     db.characters = db.characters or {} -- [key] = the roster entry (Roster.lua)
     db.receivers = db.receivers or {}   -- [profession] = key: the receiver you picked; nil = automatic. Banker: picked only
     db.keep = db.keep or {}             -- [itemID] = true: never mailed
+    db.vendorItems = db.vendorItems or {} -- [itemID] = true: a vendor sells it for money, in any number (Vendors.lua)
     db.sending = db.sending or {}       -- what was learned about sending on this client (Mailer.lua)
     ns.db = db
     ns.cdb = ns.cdb or {} -- a stand-in until the profile is bound at PLAYER_LOGIN
@@ -307,8 +310,10 @@ end
 ------------------------------------------------------------------------
 local OPTION_HELP = {
     { "materials", "flag", "profession materials go to the alt highest in that profession" },
+    { "recipes", "flag", "recipes go to the alt that gets their profession's materials" },
     { "gear", "flag", "BoE gear goes to the alt it is an upgrade for, else to the enchanter" },
     { "supplies", "flag", "class supplies go to an alt of that class" },
+    { "vendorGoods", "flag", "trade goods a vendor sells stay: every alt buys its own" },
     { "gearQuality", "quality", "the least quality of BoE gear that is mailed" },
     { "levelSlack", "number", "gear goes to an alt up to this many levels under the item's" },
     { "bankerQuality", "quality", "the banker takes tradeable items of this quality or better ..." },
