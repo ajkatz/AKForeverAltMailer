@@ -18,7 +18,7 @@ what in your bags belongs with which character - and why - and one button mails 
   for less than the postage. Anything else a vendor sells in any number is learned as you shop.
 - **Gear to whoever wears it best.** Green-or-better gear that binds when worn goes to the alt it is the biggest
   upgrade for - the right armor and weapon types, near its level, stats that suit its class. Nobody? To your
-  enchanter, to disenchant.
+  enchanter, to disenchant. Cloth armor and cloaks always go to the enchanter.
 - **Class supplies to that class.** Candles, powders, runes, symbols, ankhs, soul shards, your enchanter's wizard
   and mana oils for your casters and healers; arrows and bullets to your hunter. What you use yourself stays.
 - **A banker for the rest.** Pick one (`/aam banker <name>`) and tradeable valuables no other alt takes go there:

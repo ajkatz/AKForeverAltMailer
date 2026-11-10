@@ -19,7 +19,8 @@
 --     class, and the item's level beats what it wears in that slot); failing that to the enchanter. Never kept
 --     for the character at the mailbox: it holds the piece and puts it on if it wants it (the user's pick: "a BoE
 --     piece goes to the alt whose class can use it, instead of the enchanter"; kept "for you", the enchanter had
---     got next to nothing - 2026-10-20);
+--     got next to nothing - 2026-10-20). Cloth armor - cloaks too - is never mailed to be worn: it goes on to
+--     the enchanter (the user, 2026-11-07: "alt mailer shouldn't be sending cloth items to the player");
 --   * THE BANKER, last (the user, 2026-10-20: "a general banker that just gets tradeable valuables"): what no rule
 --     above took - or a rule took but found nobody for, like parts with no engineer - goes to the banker you
 --     picked when it is tradeable and worth something: green or better, a recipe, or selling to a vendor for at
@@ -38,6 +39,7 @@ local ItemBind = type(Enum) == "table" and type(Enum.ItemBind) == "table" and En
 -- gear that binds once worn: "binds when equipped", and "warbound until equipped" (Enum.ItemBind on Forever)
 local UNTIL_EQUIPPED = { [ItemBind.OnEquip or 2] = true, [ItemBind.ToBnetAccountUntilEquipped or 9] = true }
 local MAIN_HAND, OFF_HAND = 16, 17
+local ARMOR_CLOTH = 1 -- armor subclass: robes, cloth pieces, cloaks - never mailed to an alt to wear
 
 local function item()
     return type(C_Item) == "table" and C_Item or nil
@@ -328,14 +330,15 @@ function Classify.Verdict(slotInfo, facts)
         if not ns:GetOption("gear") then
             return keep("gear is switched off", "gear")
         end
-        local wearer = Classify.BestWearer(facts)
+        local cloth = facts.classID == CLASS_ARMOR and facts.subclassID == ARMOR_CLOTH
+        local wearer = not cloth and Classify.BestWearer(facts) or nil
         if wearer then
             local gain = string.format("item level %d over the %d it wears", facts.itemLevel, wearer.wears)
             return send(wearer.entry, "gear", "an upgrade for " .. Roster.Label(wearer.entry) .. ": " .. gain, "wear")
         end
         local enchanter, why = Roster:ReceiverFor("Enchanting")
         if not enchanter then
-            return Classify.ForBanker(slotInfo, facts) or keep("no alt would wear it, and " .. why, "gear")
+            return Classify.ForBanker(slotInfo, facts) or keep((cloth and "cloth is not mailed to be worn, and " or "no alt would wear it, and ") .. why, "gear")
         end
         local needs = ns.Data.DisenchantSkill(facts.itemLevel)
         local has = (enchanter.professions or {}).Enchanting and enchanter.professions.Enchanting.skill or 0
@@ -343,7 +346,7 @@ function Classify.Verdict(slotInfo, facts)
         if Roster:IsMe(enchanter.key) then
             return keep("yours to disenchant: you are the enchanter" .. note, "gear")
         end
-        return send(enchanter, "gear", "to disenchant (" .. why .. ")" .. note, "disenchant")
+        return send(enchanter, "gear", (cloth and "cloth, to disenchant (" or "to disenchant (") .. why .. ")" .. note, "disenchant")
     end
 
     return Classify.ForBanker(slotInfo, facts) or keep(nil)

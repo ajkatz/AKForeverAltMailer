@@ -22,7 +22,7 @@ and again after it levels a profession, and the addon knows your account.
 | Engineering parts | your highest Engineering |
 | Recipes, patterns, plans, schematics, formulas | the same alt as that profession's materials |
 | Trade goods a vendor sells: thread, dye, vials, flux, spices | nobody - they stay, every alt buys its own |
-| Gear that binds when worn, green or better | the alt it is the biggest upgrade for; else your enchanter, to disenchant |
+| Gear that binds when worn, green or better | the alt it is the biggest upgrade for; else your enchanter, to disenchant (cloth armor and cloaks always) |
 | Class supplies: candles, powders, runes, symbols, ankhs, soul shards, the enchanters' wizard and mana oils, arrows and bullets | you, when you are of their class; else your highest alt of those classes |
 | Tradeable valuables no rule above takes | your banker |
 
@@ -45,7 +45,8 @@ and again after it levels a profession, and the addon knows your account.
   (intellect and spirit are not for a warrior, strength and agility not for a mage), and wears less in that
   slot. A one-hand weapon counts the off hand only for a character that can dual wield, and a two-hander holds
   the off hand. Nobody: the enchanter, with a note when its skill is short of disenchanting it. The character
-  at the mailbox never keeps a piece "for itself": it holds the piece, and puts it on if it wants it.
+  at the mailbox never keeps a piece "for itself": it holds the piece, and puts it on if it wants it. Cloth
+  armor - cloaks too - is never mailed to be worn: it goes to the enchanter.
 - **The banker** is only ever the one you pick: `/aam banker <name>`, or in the Receivers list. It gets what is
   tradeable and worth something - green or better, a recipe nobody else takes, or a stack that sells for a gold at a vendor -
   when no other rule takes it, or a rule found nobody for it (engineering parts with no engineer). What a

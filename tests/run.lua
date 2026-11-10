@@ -272,10 +272,10 @@ scenario("gear that binds when worn, green or better: to the alt who would wear 
     local ns = account()
     local chest = sentTo(ns, 50001, "Purr Tank")
     check(chest.reason:find("an upgrade for Purr Tank: item level 30 over the 20 it wears", 1, true), chest.reason)
-    -- cloth, caster stats: the warlock wears better, the hunter is no caster; you (the shaman) gain as much as the
-    -- mage and are higher - but you are at the mailbox: it goes to the mage
-    local robe = sentTo(ns, 50002, "Purr Mage")
-    check(robe.reason:find("an upgrade for Purr Mage: item level 22 over the 15 it wears", 1, true), robe.reason)
+    -- cloth: the mage would gain 22 over its 15, but cloth is never mailed to be worn - the enchanter gets it
+    local robe = sentTo(ns, 50002, "Purr Die")
+    check(robe.reason:find("cloth, to disenchant", 1, true), robe.reason)
+    equal(robe.detail, "disenchant")
     local helm = sentTo(ns, 50003, "Purr Die") -- intellect plate: the warrior is no caster, there is no paladin
     check(helm.reason:find("to disenchant", 1, true), helm.reason)
     local sword = sentTo(ns, 50004, "Purr Gola") -- the hunter (class table: swords) gains 28 over nothing in its off hand ... the rogue only 20
@@ -441,8 +441,14 @@ scenario("BoE gear and the hands: a piece only you could wear goes to the enchan
     -- a shield: the warrior's greatsword holds the off hand at 35, the 30 shield is no upgrade; you would gain, but
     -- you are at the mailbox
     sentTo(ns, 50009, "Purr Die")
-    -- a warbound cloak: gear like BoE; nobody wears a cloak, the highest level gains most
-    sentTo(ns, 50010, "Purr Tank")
+    -- a warbound cloak: gear like BoE - and cloth, so not mailed to be worn: the enchanter's
+    local cloak = sentTo(ns, 50010, "Purr Die")
+    check(cloak.reason:find("cloth, to disenchant", 1, true), cloak.reason)
+    -- with no enchanter at all, cloth stays and says why
+    local enchanter = ns.db.characters[keyOf("Purr Die")]
+    ns.db.characters[keyOf("Purr Die")] = nil
+    keptWith(ns, 50010, "cloth is not mailed to be worn")
+    ns.db.characters[keyOf("Purr Die")] = enchanter
     -- a dagger: the hunter dual wields (class, 25) and has nothing beside its sword: 18 over nothing
     local dagger = sentTo(ns, 50008, "Purr Gola")
     check(dagger.reason:find("item level 18 over the 0 it wears", 1, true), dagger.reason)
@@ -611,8 +617,8 @@ scenario("the plan: per receiver, mails of twelve; postage thirty copper an item
     for _, group in ipairs(plan.receivers) do
         if group.entry.address == "Purr Mage" then mage = group end
     end
-    equal(#mage.stacks, 15, "fourteen stacks of cloth and the robe"); equal(#mage.mails, 2); equal(#mage.mails[1].stacks, 12); equal(#mage.mails[2].stacks, 3)
-    equal(mage.mails[1].subject, "AltMailer: gear for you, cloth", "gear first, then the materials")
+    equal(#mage.stacks, 14, "fourteen stacks of cloth (the cloth robe is the enchanter's)"); equal(#mage.mails, 2); equal(#mage.mails[1].stacks, 12); equal(#mage.mails[2].stacks, 2)
+    equal(mage.mails[1].subject, "AltMailer: cloth")
     equal(mage.mails[2].subject, "AltMailer: cloth")
     equal(plan.postage, plan.attachments * 30)
     local gola
@@ -647,7 +653,7 @@ scenario("sending, measured: a click sends the first mail - each stack attached,
     check(ns.db.sending.addresses["Purr Gola"], "the names the client took are noted")
     local counts = Mock.bagCounts()
     equal(counts[2447], nil, "the herbs are gone"); equal(counts[50001], nil, "the chest is gone")
-    equal(counts[17030], 2, "the Ankh stayed"); equal(counts[6948], 1, "the hearthstone stayed"); equal(counts[50002], nil, "the robe went to the mage")
+    equal(counts[17030], 2, "the Ankh stayed"); equal(counts[6948], 1, "the hearthstone stayed"); equal(counts[50002], nil, "the robe went to the enchanter")
     equal(G.AKForeverAltMailerSend:GetText(), "Nothing to mail")
     check(printed("all mailed: " .. mails .. " mail(s)"), "said so")
 end)

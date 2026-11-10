@@ -1,5 +1,9 @@
 # AKForeverAltMailer
 
+## 0.1.2
+
+- Cloth armor (cloaks too) is no longer mailed to an alt to wear; it goes to the enchanter like gear nobody would wear.
+
 ## 0.1.1
 
 - **Recipes go to their profession's alt.** A tailoring pattern goes to your tailor, an alchemy recipe to
