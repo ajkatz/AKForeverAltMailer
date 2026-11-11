@@ -57,6 +57,21 @@ and again after it levels a profession, and the addon knows your account.
 The **Receivers** button lists who takes what. A click on a profession picks the next alt; a right-click goes
 back to automatic. A click on the banker picks the next character; a right-click stops the banker.
 
+## In your bags
+
+- **The tooltip says it.** An item that will be mailed says so in its tooltip in your bags, and to whom:
+  "AltMailer: to Purr Gola - the highest Alchemy (230)". What stays gets no line.
+- **Alt+right-click an item** in your bags for a small menu:
+  - **This item goes to** - pick any of your characters mail reaches, and every copy of that item goes to it,
+    on every character of yours, whatever the rules say (greys, potions and vendor goods too). Pick the
+    character you are on to keep it there. **Automatic** goes back to the rules, and says what they would do.
+  - **All <profession> goods go to** - the item's group: a profession's materials and recipes (for
+    Enchanting, the gear to disenchant too). The same pick as in the Receivers list.
+  - **Valuables nobody else takes go to** - for an item with no profession group: your banker.
+  - **Never mail this item** - the keep list.
+- Soulbound items, quest items and keys are never mailed, picked or not. `/aam picks` lists your picks per
+  item, `/aam picks clear` takes them all off.
+
 ## Sending
 
 The panel docks beside the mail window when a mailbox opens and closes with it - on the client's events, or
@@ -84,6 +99,7 @@ little money for the postage, or items already on the send window, stop it too.
 - `/aam banker <name>` - pick your banker; `/aam banker none` stops it
 - `/aam alts` - your characters as the addon knows them; `/aam forget <name>` drops one
 - `/aam unkeep` - your keep list; `/aam unkeep <item id>`, `/aam unkeep all`
+- `/aam picks` - your picks per item (Alt+right-click an item in your bags to set one); `/aam picks clear`
 - `/aam set` - the options: materials, recipes, gear, supplies and vendor goods on or off, the least quality of gear
   mailed, the level slack, the banker's quality and money lines, docking; `/aam set <name> <value>`, `/aam set <name> default`
 - `/aam diag` - a report into the saved file

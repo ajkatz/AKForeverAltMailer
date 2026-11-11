@@ -65,6 +65,7 @@ local function showRowTooltip(row)
         GameTooltip:AddLine("Stays: " .. verdict.reason, 0.7, 0.7, 0.7, true)
     end
     GameTooltip:AddLine("Right-click: never mail this item", 0.5, 0.5, 0.5)
+    GameTooltip:AddLine("Alt+right-click it in your bags: pick who gets it", 0.5, 0.5, 0.5)
     GameTooltip:Show()
 end
 

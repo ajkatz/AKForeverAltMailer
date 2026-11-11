@@ -325,6 +325,11 @@ function Roster:Forget(key)
             ns.db.receivers[profession] = nil
         end
     end
+    for itemID, pick in pairs(ns.db.itemReceivers or {}) do
+        if type(pick) == "table" and pick.to == key then
+            ns.db.itemReceivers[itemID] = nil
+        end
+    end
     ns:Fire("ROSTER_CHANGED")
     return true
 end

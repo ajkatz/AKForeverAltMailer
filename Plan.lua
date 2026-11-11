@@ -49,6 +49,8 @@ local function subjectFor(mail)
             word = "recipes"
         elseif stack.verdict.category == "valuables" then
             word = "valuables"
+        elseif stack.verdict.category == "picked" then
+            word = "your picks"
         else
             word = "class supplies"
         end

@@ -1,5 +1,13 @@
 # AKForeverAltMailer
 
+## 0.2.0
+
+- **Tooltips say what will be mailed.** An item in your bags that AltMailer will mail says so in its tooltip,
+  and to whom ("AltMailer: to Purr Gola - the highest Alchemy (230)"). Items that stay get no line.
+- **Alt+right-click an item in your bags** to pick who gets it: that item to any of your characters (every
+  copy, whatever the rules say), its whole group - a profession's materials and recipes, or your banker - or
+  never mail it. "Automatic" goes back to the rules. `/aam picks` lists the picks, `/aam picks clear` clears.
+
 ## 0.1.2
 
 - Cloth armor (cloaks too) is no longer mailed to an alt to wear; it goes to the enchanter like gear nobody would wear.

@@ -837,6 +837,125 @@ scenario("recipes go to the alt that gets their profession's materials: a tailor
     keptWith(ns, 81002, "recipes are switched off")
 end)
 
+local function hasLine(lines, start)
+    for _, text in ipairs(lines) do
+        if text:sub(1, #start) == start then return text end
+    end
+end
+
+scenario("the tooltip of a bag item says where it will be mailed - only when it will: nothing on what stays (greys, soulbound, your keep list, your own profession's goods), nothing off the bags", function()
+    local ns = account()
+    equal(hasLine(Mock.hoverBagItem(0, 1), "AltMailer:"), "AltMailer: to Purr Gola - the highest Alchemy (230)", "Peacebloom")
+    equal(hasLine(Mock.hoverBagItem(0, 3), "AltMailer:"), "AltMailer: to Purr Mage - the highest Tailoring (200)", "Linen Cloth")
+    equal(hasLine(Mock.hoverBagItem(1, 4), "AltMailer:"), nil, "a grey stays: no line")
+    equal(hasLine(Mock.hoverBagItem(0, 14), "AltMailer:"), nil, "soulbound: no line")
+    equal(hasLine(Mock.hoverBagItem(1, 3), "AltMailer:"), nil, "the hearthstone: no line")
+    equal(hasLine(Mock.hoverBagItem(0, 30), "AltMailer:"), nil, "an empty slot: no line")
+    equal(hasLine(Mock.hoverBagItem(-1, 1), "AltMailer:"), nil, "the bank is not a bag the mailer reads")
+    ns.db.keep[2447] = true
+    equal(hasLine(Mock.hoverBagItem(0, 1), "AltMailer:"), nil, "on the keep list: no line")
+    -- a tooltip not on a bag item
+    GameTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    for _, fn in ipairs(Mock.postCalls[0]) do fn(GameTooltip, {}) end
+    equal(hasLine(GameTooltip.__lines, "AltMailer:"), nil, "not a bag item: no line")
+    -- another tooltip over a bag item (a comparison, a shopping tooltip): left alone
+    local other = CreateFrame("GameTooltip", "ShoppingTooltip1")
+    other:SetOwner(Mock.bagButton(0, 3), "ANCHOR_NONE")
+    for _, fn in ipairs(Mock.postCalls[0]) do fn(other, {}) end
+    equal(hasLine(other.__lines, "AltMailer:"), nil, "not GameTooltip: no line")
+    equal(ns.Picks.tooltipHooked, true)
+    equal(#Mock.errors, 0)
+end)
+
+scenario("Alt+right-click on an item in the bags: a menu - who gets this item (every copy, account-wide; the rules' own answer as Automatic), who gets its whole group (the Receivers pick, or the banker for what has no group), never mail it; a pick beats every rule but soulbound and the keep list; '/aam picks' lists them", function()
+    local ns = account()
+    equal(Mock.clickBagItem(0, 1, "RightButton", false), nil, "a plain right-click: no menu, the client uses the item")
+    equal(Mock.clickBagItem(0, 1, "LeftButton", true), nil, "Alt+left-click: no menu")
+    local menu = Mock.clickBagItem(0, 1, "RightButton", true)
+    check(menu, "Alt+right-click: the menu")
+    equal(menu.children[1].text, "Peacebloom")
+    local auto = Mock.menuEntry("This item goes to", "Automatic")
+    equal(auto.text, "Automatic: Purr Gola"); equal(auto.isSelected(), true)
+    check(Mock.menuEntry("This item goes to", "Purrdee Bubson (this character)"), "you are on the list too")
+    check(not Mock.menuEntry("This item goes to", "Horde Guy"), "mail does not reach the Horde alt")
+    check(Mock.menuEntry("All Alchemy goods (herbs, recipes) go to", "Automatic: Purr Gola, the highest (230)"), "the group: Alchemy")
+    check(Mock.menuEntry("All Alchemy goods", "Purr Gola - Alchemy 230"), "each alt with its skill")
+
+    -- this item to the mage: every Peacebloom; another herb still goes by the rules
+    Mock.menuEntry("This item goes to", "Purr Mage").setSelected()
+    equal(ns.db.itemReceivers[2447].to, keyOf("Purr Mage"))
+    local v = sentTo(ns, 2447, "Purr Mage"); equal(v.reason, "your pick for this item")
+    sentTo(ns, 90001, "Purr Gola")
+    equal(hasLine(Mock.hoverBagItem(0, 1), "AltMailer:"), "AltMailer: to Purr Mage - your pick for this item")
+    Mock.clickBagItem(0, 1, "RightButton", true)
+    equal(Mock.menuEntry("This item goes to", "Purr Mage").isSelected(), true, "the menu shows the pick")
+    equal(Mock.menuEntry("This item goes to", "Automatic").text, "Automatic: Purr Gola", "Automatic still says what the rules would do")
+    Mock.menuEntry("This item goes to", "Automatic").setSelected()
+    equal(ns.db.itemReceivers[2447], nil)
+    sentTo(ns, 2447, "Purr Gola")
+
+    -- the group: all Tailoring goods to the warlock - the Receivers pick
+    Mock.clickBagItem(0, 3, "RightButton", true)
+    Mock.menuEntry("All Tailoring goods (cloth, recipes) go to", "Purr Die - Tailoring 150").setSelected()
+    equal(ns.db.receivers.Tailoring, keyOf("Purr Die"))
+    sentTo(ns, 2589, "Purr Die")
+    -- and the item to you: it stays here
+    Mock.clickBagItem(0, 3, "RightButton", true)
+    Mock.menuEntry("This item goes to", "Purrdee Bubson").setSelected()
+    keptWith(ns, 2589, "your pick for this item")
+
+    -- a grey has no group: the banker's section; a pick mails it all the same
+    Mock.clickBagItem(1, 4, "RightButton", true)
+    equal(Mock.menuEntry("This item goes to", "Automatic").text, "Automatic: stays (grey: for the vendor)")
+    check(Mock.menuEntry("Valuables nobody else takes go to (your banker)", "No banker").isSelected(), "no banker yet")
+    Mock.menuEntry("Valuables nobody else takes go to (your banker)", "Purr Tank").setSelected()
+    equal(ns.db.receivers.Banker, keyOf("Purr Tank"))
+    Mock.clickBagItem(1, 4, "RightButton", true)
+    Mock.menuEntry("This item goes to", "Purr Leather").setSelected()
+    sentTo(ns, 60001, "Purr Leather")
+    -- the plan's mail names the picks
+    local plan = ns.Plan.Build()
+    for _, group in ipairs(plan.receivers) do
+        if group.entry.address == "Purr Leather" then
+            check(group.mails[1].subject:find("your picks", 1, true), "subject: " .. group.mails[1].subject)
+        end
+    end
+
+    -- never mail: the keep list beats the pick
+    Mock.clickBagItem(1, 4, "RightButton", true)
+    local never = Mock.menuEntry("Never mail this item")
+    equal(never.kind, "checkbox"); equal(never.isSelected(), false)
+    never.setSelected()
+    keptWith(ns, 60001, "on your keep list")
+    Mock.clickBagItem(1, 4, "RightButton", true)
+    equal(Mock.menuEntry("Never mail this item").isSelected(), true)
+    Mock.menuEntry("Never mail this item").setSelected()
+    sentTo(ns, 60001, "Purr Leather")
+
+    -- soulbound: nothing to pick
+    Mock.clickBagItem(0, 14, "RightButton", true)
+    check(Mock.menuEntry("Soulbound"), "the menu says it cannot be mailed")
+    check(not Mock.menuEntry("This item goes to"), "and offers nothing")
+
+    -- '/aam picks'
+    Mock.slash("picks")
+    check(printed("Linen Cloth -> Purrdee Bubson"), "listed")
+    check(printed("Broken Fang -> Purr Leather"), "listed")
+    -- forgetting a character takes its picks off
+    Mock.slash("forget Purr Leather")
+    equal(ns.db.itemReceivers[60001], nil)
+    Mock.slash("picks clear")
+    equal(next(ns.db.itemReceivers), nil)
+    sentTo(ns, 2589, "Purr Die") -- the item pick gone: the group pick speaks again
+    equal(#Mock.errors, 0)
+end)
+
+scenario("a pick for a character mail no longer reaches - another realm, another faction - goes back to the rules", function()
+    local ns = account()
+    ns.db.itemReceivers[2447] = { to = keyOf("Horde Guy"), name = "Peacebloom" }
+    sentTo(ns, 2447, "Purr Gola")
+end)
+
 Mock.realPrint(string.format("%d passed, %d failed", passed, #failures))
 if #failures > 0 then
     os.exit(1)

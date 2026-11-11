@@ -229,6 +229,7 @@ local function initDB()
     db.characters = db.characters or {} -- [key] = the roster entry (Roster.lua)
     db.receivers = db.receivers or {}   -- [profession] = key: the receiver you picked; nil = automatic. Banker: picked only
     db.keep = db.keep or {}             -- [itemID] = true: never mailed
+    db.itemReceivers = db.itemReceivers or {} -- [itemID] = { to = key, name }: that character gets every copy (Picks.lua)
     db.vendorItems = db.vendorItems or {} -- [itemID] = true: a vendor sells it for money, in any number (Vendors.lua)
     db.sending = db.sending or {}       -- what was learned about sending on this client (Mailer.lua)
     ns.db = db

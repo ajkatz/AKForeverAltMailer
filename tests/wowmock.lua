@@ -66,6 +66,7 @@ function widgetMethods.Disable(self) self.__enabled = false end
 function widgetMethods.SetEnabled(self, on) self.__enabled = on and true or false end
 function widgetMethods.IsEnabled(self) return self.__enabled ~= false end
 function widgetMethods.SetOwner(self, owner) self.__owner = owner; self.__lines = {} end
+function widgetMethods.GetOwner(self) return self.__owner end
 function widgetMethods.AddLine(self, text) self.__lines[#self.__lines + 1] = tostring(text) end
 function widgetMethods.AddDoubleLine(self, a, b) self.__lines[#self.__lines + 1] = tostring(a) .. " " .. tostring(b) end
 function widgetMethods.SetHyperlink(self, link) self.__lines = { tostring(link) } end
@@ -183,7 +184,38 @@ function Mock.install(options)
         HUNTER = { colorStr = "ffabd473" }, WARLOCK = { colorStr = "ff9482c9" }, ROGUE = { colorStr = "fffff569" },
     }
     G.BackdropTemplateMixin = {}
-    G.Enum = { PlayerInteractionType = { MailInfo = 17 }, ItemBind = { OnEquip = 2, ToBnetAccountUntilEquipped = 9 } }
+    G.Enum = { PlayerInteractionType = { MailInfo = 17 }, ItemBind = { OnEquip = 2, ToBnetAccountUntilEquipped = 9 },
+        TooltipDataType = { Item = 0, Spell = 1 } }
+    -- tooltips: the post calls addons add, run when a bag item's tooltip is shown (Mock.hoverBagItem)
+    Mock.postCalls = {}
+    G.TooltipDataProcessor = {
+        AddTooltipPostCall = function(kind, fn)
+            Mock.postCalls[kind] = Mock.postCalls[kind] or {}
+            table.insert(Mock.postCalls[kind], fn)
+        end,
+    }
+    -- the context menu: MenuUtil's descriptions, kept as a tree for the tests (Mock.menu)
+    Mock.menu = nil
+    local function description(text, kind)
+        local d = { text = text, kind = kind, children = {} }
+        local function add(child) d.children[#d.children + 1] = child; return child end
+        function d:CreateTitle(t) return add(description(t, "title")) end
+        function d:CreateButton(t, callback) local c = add(description(t, "button")); c.callback = callback; return c end
+        function d:CreateRadio(t, isSelected, setSelected) local c = add(description(t, "radio")); c.isSelected, c.setSelected = isSelected, setSelected; return c end
+        function d:CreateCheckbox(t, isSelected, setSelected) local c = add(description(t, "checkbox")); c.isSelected, c.setSelected = isSelected, setSelected; return c end
+        function d:CreateDivider() return add(description(nil, "divider")) end
+        return d
+    end
+    G.MenuUtil = {
+        CreateContextMenu = function(owner, generator)
+            local root = description(nil, "root")
+            generator(owner, root)
+            Mock.menu = root
+            return root
+        end,
+    }
+    G.IsAltKeyDown = function() return state.altDown == true end
+    G.GetMouseFoci = function() return { state.mouseFocus } end
     if options.dualWield ~= nil then
         G.CanDualWield = function() return options.dualWield end
     else
@@ -382,7 +414,7 @@ function Mock.install(options)
     G.SlashCmdList = {}
 
     local ns = {}
-    for _, file in ipairs({ "Core.lua", "Data.lua", "Roster.lua", "Vendors.lua", "Classify.lua", "Plan.lua", "Mailer.lua", "Panel.lua", "Diagnostics.lua" }) do
+    for _, file in ipairs({ "Core.lua", "Data.lua", "Roster.lua", "Vendors.lua", "Classify.lua", "Plan.lua", "Mailer.lua", "Panel.lua", "Picks.lua", "Diagnostics.lua" }) do
         local chunk, err = loadfile(file)
         if not chunk then
             error("cannot load " .. file .. ": " .. tostring(err))
@@ -440,6 +472,53 @@ end
 
 function Mock.logout()
     Mock.fire("PLAYER_LOGOUT")
+end
+
+-- a bag item button: what Blizzard's answers to GetBagID()/GetID()
+function Mock.bagButton(bag, slot)
+    local button = newWidget("ItemButton", nil, G.UIParent)
+    button.GetBagID = function() return bag end
+    button.GetID = function() return slot end
+    return button
+end
+
+-- the mouse over a bag item: its tooltip shown on GameTooltip, the addons' post calls run; the tooltip's lines back
+function Mock.hoverBagItem(bag, slot)
+    local button = Mock.bagButton(bag, slot)
+    state.mouseFocus = button
+    G.GameTooltip:SetOwner(button, "ANCHOR_NONE")
+    G.GameTooltip.__lines = { "item " .. tostring(bag) .. "/" .. tostring(slot) }
+    for _, fn in ipairs(Mock.postCalls[0] or {}) do
+        fn(G.GameTooltip, { type = 0 })
+    end
+    return G.GameTooltip.__lines
+end
+
+-- a click on a bag item with the mouse over it: which = "RightButton" etc., alt = Alt held
+function Mock.clickBagItem(bag, slot, which, alt)
+    state.mouseFocus = Mock.bagButton(bag, slot)
+    state.altDown = alt and true or false
+    Mock.menu = nil
+    Mock.fire("GLOBAL_MOUSE_DOWN", which)
+    Mock.fire("GLOBAL_MOUSE_UP", which)
+    state.altDown = false
+    return Mock.menu
+end
+
+-- a menu entry by its text's start, walking down the path: Mock.menuEntry("This item goes to", "Purr Gola")
+function Mock.menuEntry(...)
+    local node = Mock.menu
+    for _, part in ipairs({ ... }) do
+        local found
+        for _, child in ipairs(node and node.children or {}) do
+            if child.text and child.text:sub(1, #part) == part then
+                found = child
+                break
+            end
+        end
+        node = found
+    end
+    return node
 end
 
 function Mock.slash(text)

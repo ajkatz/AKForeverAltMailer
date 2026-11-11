@@ -1,7 +1,12 @@
 -- Classify: where one stack in your bags goes, and why - or why it stays.
 --
 -- In this order, the first rule that speaks decides:
---   * stays: your keep list, soulbound, locked, a quest item or key, grey (for the vendor), the hearthstone;
+--   * stays: your keep list, soulbound, locked, a quest item or key, the hearthstone;
+--   * YOUR PICK FOR THE ITEM (Alt+right-click in the bags, Picks.lua): that character gets every copy, whatever
+--     the rules below would say - a grey, a potion, vendor goods too (the user, 2026-11-11: "an EASY way for
+--     users to add/remove alt targets per item/item type from an item/the bag"); a pick mail does not reach
+--     goes back to automatic;
+--   * stays: grey (for the vendor);
 --   * CLASS SUPPLIES (Data.SUPPLIES - candles, powders, shards, the enchanters' oils - and arrows and bullets):
 --     they stay with you when you are of their class, else go to the highest-level alt of their classes;
 --   * VENDOR GOODS - trade goods a vendor sells for money in any number (thread, dye, vials, flux, spices by
@@ -239,8 +244,39 @@ function Classify.ForBanker(slotInfo, facts)
     return send(entry, "valuables", "tradeable and " .. worth .. ": to your banker", "banker")
 end
 
+-- your pick for an item, when mail reaches that character; nil = automatic
+function Classify.ItemPick(itemID)
+    local pick = ns.db.itemReceivers and ns.db.itemReceivers[itemID]
+    if type(pick) ~= "table" or not pick.to then
+        return nil
+    end
+    for _, entry in ipairs(ns.Roster:Reachable()) do
+        if entry.key == pick.to then
+            return entry
+        end
+    end
+    return nil
+end
+
+-- the group an item belongs to in the Receivers list - the profession whose alt gets it (materials, recipes,
+-- and gear to disenchant for Enchanting) - whatever the options and the vendors say; nil when none
+function Classify.GroupOf(facts)
+    local profession = ns.Data.MATERIALS[facts.itemID]
+    if not profession and facts.classID == CLASS_TRADEGOODS and facts.isCraftingReagent ~= false then
+        profession = ns.Data.TRADEGOODS_SUBCLASS[facts.subclassID]
+    end
+    if not profession and facts.classID == CLASS_RECIPE then
+        profession = ns.Data.RECIPE_SUBCLASS[facts.subclassID]
+    end
+    if not profession and (facts.classID == CLASS_ARMOR or facts.classID == CLASS_WEAPON) and UNTIL_EQUIPPED[facts.bindType] then
+        profession = "Enchanting"
+    end
+    return profession
+end
+
 -- the verdict for one stack: { action = "send" | "keep", receiver, category, reason, detail }
-function Classify.Verdict(slotInfo, facts)
+-- options.ignorePick: what the rules alone say (the menu's "Automatic" line)
+function Classify.Verdict(slotInfo, facts, options)
     local itemID = facts.itemID
     if ns.db.keep[itemID] then
         return keep("on your keep list")
@@ -259,6 +295,13 @@ function Classify.Verdict(slotInfo, facts)
     end
     if facts.classID == CLASS_KEY then
         return keep("a key")
+    end
+    local pick = not (options and options.ignorePick) and Classify.ItemPick(itemID) or nil
+    if pick then
+        if ns.Roster:IsMe(pick.key) then
+            return keep("yours: your pick for this item", "picked")
+        end
+        return send(pick, "picked", "your pick for this item", "item")
     end
     local quality = slotInfo.quality or facts.quality
     if quality == 0 then

@@ -71,6 +71,9 @@ function Diagnostics:Collect()
         savedState = ns.savedStateSource,
         readings = sanitize(ns.Roster.readings),
         characters = sanitize(ns.db.characters),
+        picks = { items = sanitize(ns.db.itemReceivers), tooltipHooked = ns.Picks and ns.Picks.tooltipHooked or false,
+            menus = ns.Picks and ns.Picks.stats.menus, lines = ns.Picks and ns.Picks.stats.lines,
+            menuUtil = type(MenuUtil) == "table" and type(MenuUtil.CreateContextMenu) == "function" },
         receivers = (function()
             local out = {}
             for _, profession in ipairs(ns.Data.PROFESSIONS) do

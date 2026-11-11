@@ -17,4 +17,5 @@ Classify.lua
 Plan.lua
 Mailer.lua
 Panel.lua
+Picks.lua
 Diagnostics.lua
